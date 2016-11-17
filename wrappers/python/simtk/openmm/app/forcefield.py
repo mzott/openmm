@@ -1080,13 +1080,13 @@ class ForceField(object):
                 else:
                     data.recordMatchedAtomParameters(res, template, matches)
 
-        # Try to apply patches to find matches for any unmatched residues.
+            # Try to apply patches to find matches for any unmatched residues.
 
-        if len(unmatchedResidues) > 0:
-            unmatchedResidues = _applyPatchesToMatchResidues(self, data, unmatchedResidues, bondedToAtom, ignoreExternalBonds)
+            if len(unmatchedResidues) > 0:
+                unmatchedResidues = _applyPatchesToMatchResidues(self, data, unmatchedResidues, bondedToAtom, ignoreExternalBonds)
 
-        # If we still haven't found a match for a residue, attempt to use residue template generators to create
-        # new templates (and potentially atom types/parameters).
+            # If we still haven't found a match for a residue, attempt to use residue template generators to create
+            # new templates (and potentially atom types/parameters).
 
         else:
             for atom in topology.atoms():
