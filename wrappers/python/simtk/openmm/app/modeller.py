@@ -255,7 +255,9 @@ class Modeller(object):
         self.topology = newTopology
         self.positions = newPositions
 
-    def addSolvent(self, forcefield, model='tip3p', boxSize=None, boxVectors=None, padding=None, numAdded=None, positiveIon='Na+', negativeIon='Cl-', ionicStrength=0*molar, neutralize=True):
+    def addSolvent(self, forcefield, model='tip3p', boxSize=None, boxVectors=None, padding=None, numAdded=None,
+                   positiveIon='Na+', negativeIon='Cl-', ionicStrength=0*molar, neutralize=True,
+                   atomTypes=None, atomCharges=None):
         """Add solvent (both water and ions) to the model to fill a rectangular box.
 
         The algorithm works as follows:
@@ -371,8 +373,11 @@ class Modeller(object):
         negativeElement = negIonElements[negativeIon]
 
         # Have the ForceField build a System for the solute from which we can determine van der Waals radii.
+        if atomTypes == None:
+            system = forcefield.createSystem(self.topology)
+        else:
+            system = forcefield.createSystem(self.topology, atomTypes=atomTypes, atomCharges=atomCharges)
 
-        system = forcefield.createSystem(self.topology)
         nonbonded = None
         for i in range(system.getNumForces()):
             if isinstance(system.getForce(i), NonbondedForce):
@@ -404,7 +409,7 @@ class Modeller(object):
             newTopology.addBond(newAtoms[bond[0]], newAtoms[bond[1]])
 
         # Sort the solute atoms into cells for fast lookup.
-
+        print(self.positions)        
         if len(self.positions) == 0:
             positions = []
         else:
@@ -413,6 +418,18 @@ class Modeller(object):
         numCells = tuple((max(1, int(floor(box[i]/maxCutoff))) for i in range(3)))
         cellSize = tuple((box[i]/numCells[i] for i in range(3)))
         for i in range(len(positions)):
+            print(type(int(floor(positions[i][j]/cellSize[j]))%numCells[j] for j in range(3)))
+            print(type(floor(positions[i][j]/cellSize[j]))%numCells[j] for j in range(3))
+            print(type(positions[i][j]/cellSize[j])%numCells[j] for j in range(3))
+            print(type(numCells[0]))
+            print(type(box[0]))
+            print(type(floor(box[0])))   
+            print(cellSize)
+            print(numCells)
+            print(positions[i])
+            print(tuple((floor(positions[i][j]/cellSize[j]))%numCells[j] for j in range(3)))
+            print(type(tuple((int(floor(positions[i][j]/cellSize[j]))%numCells[j] for j in range(3)))))
+ 
             cell = tuple((int(floor(positions[i][j]/cellSize[j]))%numCells[j] for j in range(3)))
             if cell in cells:
                 cells[cell].append(i)
@@ -859,8 +876,11 @@ class Modeller(object):
 
         if forcefield is not None:
             # Use the ForceField the user specified.
-
-            system = forcefield.createSystem(newTopology, rigidWater=False, nonbondedMethod=CutoffNonPeriodic)
+            
+            if atomTypes == None:
+                system = forcefield.createSystem(newTopology, rigidWater=False, nonbondedMethod=CutoffNonPeriodic)
+            else:
+                system = forcefield.createSystem(newTopology, rigidWater=False, nonbondedMethod=CutoffNonPeriodic, atomTypes=atomTypes, atomCharges=atomCharges)
             atoms = list(newTopology.atoms())
             for i in range(system.getNumParticles()):
                 if atoms[i].element != elem.hydrogen:
@@ -1117,8 +1137,11 @@ class Modeller(object):
         if len(missingPositions) > 0:
             # There were particles whose position we couldn't identify before, since they were neither virtual sites nor Drude particles.
             # Try to figure them out based on bonds.  First, use the ForceField to create a list of every bond involving one of them.
+            if atomTypes == None:
+                system = forcefield.createSystem(newTopology, constraints=AllBonds)
+            else:
+                system = forcefield.createSystem(newTopology, constraints=AllBonds, atomTypes=atomTypes, atomCharges=atomCharges)
 
-            system = forcefield.createSystem(newTopology, constraints=AllBonds)
             bonds = []
             for i in range(system.getNumConstraints()):
                 bond = system.getConstraintParameters(i)
